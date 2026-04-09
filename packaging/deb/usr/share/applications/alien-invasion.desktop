@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Alien Invasion
+Comment=Classic space shooter game
+Exec=/usr/games/alien-invasion
+Icon=alien-invasion
+Terminal=false
+Type=Application
+Categories=Game;ArcadeGame;
+Keywords=game;arcade;shooter;space;

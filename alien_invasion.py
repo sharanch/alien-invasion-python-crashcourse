@@ -27,8 +27,6 @@ font_medium = pygame.font.SysFont("monospace", 28)
 font_small  = pygame.font.SysFont("monospace", 20)
 
 
-# --- Classes ---
-
 class Ship:
     def __init__(self):
         self.w, self.h = 50, 40
@@ -47,15 +45,12 @@ class Ship:
             self.x += self.speed
 
     def draw(self, surface):
-        # body
         pygame.draw.rect(surface, self.color, (self.x + 10, self.y + 15, 30, 25), border_radius=4)
-        # cockpit
         pygame.draw.polygon(surface, CYAN, [
             (self.x + 25, self.y),
             (self.x + 15, self.y + 18),
             (self.x + 35, self.y + 18),
         ])
-        # wings
         pygame.draw.polygon(surface, self.color, [
             (self.x,      self.y + 40),
             (self.x + 15, self.y + 20),
@@ -96,7 +91,7 @@ class Alien:
     def __init__(self, x, y, row):
         self.x = x
         self.y = y
-        self.row = row  # 0=top, affects color
+        self.row = row
         self.alive = True
         self.anim = 0
 
@@ -111,23 +106,18 @@ class Alien:
         c = self.color()
         s = self.SIZE
         x, y = int(self.x), int(self.y)
-        # body
         pygame.draw.ellipse(surface, c, (x + 4, y + 10, s - 8, s - 12))
-        # head dome
         pygame.draw.ellipse(surface, c, (x + 6, y, s - 12, 20))
-        # eyes
         eye_y = y + 6
         pygame.draw.circle(surface, BLACK, (x + 11, eye_y), 4)
         pygame.draw.circle(surface, BLACK, (x + s - 11, eye_y), 4)
         pygame.draw.circle(surface, WHITE, (x + 11, eye_y), 2)
         pygame.draw.circle(surface, WHITE, (x + s - 11, eye_y), 2)
-        # legs (animated)
         leg_offset = 4 if (self.anim // 10) % 2 == 0 else -4
         pygame.draw.line(surface, c, (x + 8,  y + s - 10), (x + 4,  y + s + leg_offset), 2)
         pygame.draw.line(surface, c, (x + 16, y + s - 10), (x + 14, y + s + leg_offset), 2)
         pygame.draw.line(surface, c, (x + s - 8,  y + s - 10), (x + s - 4,  y + s + leg_offset), 2)
         pygame.draw.line(surface, c, (x + s - 16, y + s - 10), (x + s - 14, y + s + leg_offset), 2)
-        # antennae
         pygame.draw.line(surface, c, (x + 10, y), (x + 6,  y - 8), 2)
         pygame.draw.line(surface, c, (x + s - 10, y), (x + s - 6, y - 8), 2)
 
@@ -140,8 +130,7 @@ class Explosion:
         self.x, self.y = x, y
         self.color = color
         self.particles = [
-            [random.uniform(-4, 4), random.uniform(-4, 4),
-             random.randint(3, 7)]
+            [random.uniform(-4, 4), random.uniform(-4, 4), random.randint(3, 7)]
             for _ in range(12)
         ]
         self.life = 20
@@ -154,7 +143,6 @@ class Explosion:
             p[2] = max(1, p[2] - 0.3)
 
     def draw(self, surface):
-        alpha = max(0, int(255 * self.life / 20))
         for i, p in enumerate(self.particles):
             px = int(self.x + p[0] * (20 - self.life))
             py = int(self.y + p[1] * (20 - self.life))
@@ -187,8 +175,6 @@ class Star:
         pygame.draw.circle(surface, c, (int(self.x), int(self.y)), self.size)
 
 
-# --- Fleet ---
-
 def create_fleet(level=1):
     aliens = []
     rows    = min(4 + level, 7)
@@ -202,8 +188,6 @@ def create_fleet(level=1):
             aliens.append(Alien(x, y, row))
     return aliens
 
-
-# --- Game State ---
 
 class Game:
     def __init__(self):
@@ -226,7 +210,7 @@ class Game:
         self.shoot_timer = 0
         self.player_shoot_delay = 15
         self.player_shoot_timer = 0
-        self.state      = "playing"  # playing / dead / win / gameover
+        self.state      = "playing"
         self.flash_timer = 0
         self.lives      = 3
 
@@ -264,48 +248,33 @@ class Game:
     def update(self):
         if self.state != "playing":
             return
-
-        # stars
         for s in self.stars:
             s.update()
-
-        # ship
         self.ship.update()
         self.player_shoot_timer -= 1
-
-        # bullets
         for b in self.bullets:
             b.update()
         self.bullets = [b for b in self.bullets if not b.off_screen()]
-
         for b in self.alien_bullets:
             b.update()
         self.alien_bullets = [b for b in self.alien_bullets if not b.off_screen()]
-
-        # alien movement
         alive = [a for a in self.aliens if a.alive]
         if not alive:
             self.state = "win"
             return
-
         edge_hit = False
         for a in alive:
             a.x += self.fleet_speed * self.fleet_dir
             if a.x + Alien.SIZE >= SCREEN_W or a.x <= 0:
                 edge_hit = True
-
         if edge_hit:
             self.fleet_dir *= -1
             for a in alive:
                 a.y += self.drop_dist
-
-        # alien shoot
         self.shoot_timer += 1
         if self.shoot_timer >= self.shoot_delay:
             self.alien_shoot()
             self.shoot_timer = 0
-
-        # bullet-alien collision
         for b in self.bullets[:]:
             for a in alive:
                 if b.rect.colliderect(a.rect()):
@@ -315,8 +284,6 @@ class Game:
                     if b in self.bullets:
                         self.bullets.remove(b)
                     break
-
-        # alien bullet hits ship
         for b in self.alien_bullets[:]:
             if b.rect.colliderect(self.ship.rect()):
                 self.alien_bullets.remove(b)
@@ -326,37 +293,25 @@ class Game:
                 if self.lives <= 0:
                     self.state = "gameover"
                     self.high_score = max(self.high_score, self.score)
-
-        # aliens reach bottom
         for a in alive:
             if a.y + Alien.SIZE >= self.ship.y:
                 self.state = "gameover"
                 self.high_score = max(self.high_score, self.score)
-
-        # explosions
         for e in self.explosions:
             e.update()
         self.explosions = [e for e in self.explosions if not e.dead()]
-
-        # flash timer
         if self.flash_timer > 0:
             self.flash_timer -= 1
-
-        # next level
         if self.state == "win":
             self.high_score = max(self.high_score, self.score)
 
     def draw(self):
         screen.fill(DARK_GRAY)
-
         for s in self.stars:
             s.draw(screen)
-
         if self.state == "playing":
-            # ship (flashing when hit)
             if self.flash_timer == 0 or self.flash_timer % 6 < 3:
                 self.ship.draw(screen)
-
             for b in self.bullets:
                 b.draw(screen)
             for b in self.alien_bullets:
@@ -365,16 +320,12 @@ class Game:
                 a.draw(screen)
             for e in self.explosions:
                 e.draw(screen)
-
-            # HUD
             score_surf = font_medium.render(f"SCORE  {self.score:06}", True, CYAN)
             screen.blit(score_surf, (20, 14))
             hi_surf = font_medium.render(f"BEST  {self.high_score:06}", True, YELLOW)
             screen.blit(hi_surf, (SCREEN_W // 2 - hi_surf.get_width() // 2, 14))
             level_surf = font_medium.render(f"LEVEL {self.level}", True, PURPLE)
             screen.blit(level_surf, (SCREEN_W - level_surf.get_width() - 20, 14))
-
-            # lives
             for i in range(self.lives):
                 lx = 20 + i * 40
                 pygame.draw.polygon(screen, GREEN, [
@@ -382,44 +333,32 @@ class Game:
                     (lx + 4,  SCREEN_H - 12),
                     (lx + 16, SCREEN_H - 12),
                 ])
-
         elif self.state == "win":
             self._overlay("LEVEL CLEAR!", f"Score: {self.score}", "Press R for next level")
-
         elif self.state == "gameover":
             self._overlay("GAME OVER", f"Score: {self.score}  Best: {self.high_score}", "Press R to restart")
-
         pygame.display.flip()
 
     def _overlay(self, title, sub, hint):
-        # dim
         dim = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
         dim.fill((0, 0, 0, 160))
         screen.blit(dim, (0, 0))
-
         t = font_large.render(title, True, YELLOW)
         screen.blit(t, (SCREEN_W // 2 - t.get_width() // 2, SCREEN_H // 2 - 80))
-
         s = font_medium.render(sub, True, WHITE)
         screen.blit(s, (SCREEN_W // 2 - s.get_width() // 2, SCREEN_H // 2))
-
         h = font_small.render(hint, True, CYAN)
         screen.blit(h, (SCREEN_W // 2 - h.get_width() // 2, SCREEN_H // 2 + 60))
 
 
-# --- Main loop ---
-
 def main():
     game = Game()
-
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             game.handle_event(event)
-
-            # next level on win
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 if game.state == "win":
                     prev_score = game.score
@@ -427,7 +366,6 @@ def main():
                     game.reset(game.level + 1)
                     game.score      = prev_score
                     game.high_score = prev_hi
-
         game.update()
         game.draw()
         clock.tick(FPS)
