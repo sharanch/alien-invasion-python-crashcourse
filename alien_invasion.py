@@ -5,7 +5,7 @@ import random
 # --- Init ---
 pygame.init()
 
-SCREEN_W, SCREEN_H = 1920, 1080
+SCREEN_W, SCREEN_H = 1920, 900
 FPS = 60
 
 # Colors
