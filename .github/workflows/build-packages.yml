@@ -37,6 +37,7 @@ jobs:
 
       - name: Copy game file into deb tree
         run: |
+          mkdir -p packaging/deb/usr/share/games/alien-invasion
           cp alien_invasion.py \
             packaging/deb/usr/share/games/alien-invasion/alien_invasion.py
 
